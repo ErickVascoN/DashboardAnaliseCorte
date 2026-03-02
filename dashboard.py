@@ -55,6 +55,7 @@ st.markdown("""
 # CONSTANTES
 # =====================================================================
 CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
+GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1iGj4-vknwzepbrHdRz1PwisZU2foU7aW/edit?gid=1271886873#gid=1271886873"
 
 # Detecta se está rodando local (arquivo existe) ou na nuvem (usa Google Sheets)
 RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
@@ -98,18 +99,16 @@ def carregar_dados():
             st.secrets["gcp_service_account"], scopes=scopes
         )
         client = gspread.authorize(creds)
-        spreadsheet_url = st.secrets["google_sheets"]["spreadsheet_url"]
-        sh = client.open_by_url(spreadsheet_url)
+        sh = client.open_by_url(GOOGLE_SHEETS_URL)
         worksheet = sh.worksheet('CONTROLE DE CORTE')
         data = worksheet.get_all_values()
-        # Pegar cabeçalho da linha 1 (colunas B-I = índices 1-8)
+        # Cabeçalho na linha 1, colunas B-I = índices 1-8
         header = data[0][1:9]
         rows = [row[1:9] for row in data[1:] if any(cell.strip() for cell in row[1:9])]
         df_corte = pd.DataFrame(rows, columns=header)
 
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
-    # Remover linhas onde DATA ou OP são strings vazias (vindas do Google Sheets)
     df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
     df_corte = df_corte[df_corte['OP'].astype(str).str.strip() != '']
     df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], errors='coerce')
@@ -137,7 +136,7 @@ except Exception as e:
     if RODANDO_LOCAL:
         st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
     else:
-        st.info("📡 Modo Cloud: verifique se os secrets (gcp_service_account e google_sheets.spreadsheet_url) estão configurados corretamente no Streamlit Cloud.")
+        st.info("📡 Modo Cloud: verifique se os secrets (gcp_service_account) estão configurados no Streamlit Cloud.")
     st.stop()
 
 # =====================================================================
