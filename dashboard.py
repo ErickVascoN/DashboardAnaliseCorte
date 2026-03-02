@@ -56,8 +56,9 @@ st.markdown("""
 # =====================================================================
 CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
 
-# URL de exportação CSV do Google Sheets (planilha precisa estar compartilhada como "Qualquer pessoa com o link")
-GOOGLE_SHEETS_CSV = "https://docs.google.com/spreadsheets/d/1iGj4-vknwzepbrHdRz1PwisZU2foU7aW/export?format=csv&gid=1271886873"
+# URL de download direto do Google Drive (arquivo .xlsx compartilhado publicamente)
+GOOGLE_DRIVE_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
+GOOGLE_DRIVE_URL = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_ID}"
 
 # Detecta se está rodando local (arquivo existe) ou na nuvem
 RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
@@ -89,11 +90,12 @@ def carregar_dados():
         # ---- Modo local: lê do Excel no Google Drive montado ----
         df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
     else:
-        # ---- Modo cloud: lê CSV público do Google Sheets ----
-        df_corte = pd.read_csv(GOOGLE_SHEETS_CSV)
-        # Selecionar colunas B-I (indices 1-8) se houver coluna extra
-        if df_corte.shape[1] > 8:
-            df_corte = df_corte.iloc[:, 1:9]
+        # ---- Modo cloud: baixa o .xlsx do Google Drive e lê com pandas ----
+        import io
+        import urllib.request
+        response = urllib.request.urlopen(GOOGLE_DRIVE_URL)
+        excel_data = io.BytesIO(response.read())
+        df_corte = pd.read_excel(excel_data, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
 
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
