@@ -13,14 +13,14 @@ except locale.Error:
     try:
         locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil.1252')
     except locale.Error:
-        pass  # fallback, usa padrÃ£o do sistema
+        pass  # fallback, usa padrão do sistema
 
 # =====================================================================
-# CONFIGURAÃ‡ÃƒO DA PÃGINA
+# CONFIGURAÇÃO DA PÁGINA
 # =====================================================================
 st.set_page_config(
     page_title="Dashboard Controle de Corte",
-    page_icon="âœ‚ï¸",
+    page_icon="✂️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -60,22 +60,22 @@ CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.
 GOOGLE_DRIVE_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
 GOOGLE_DRIVE_URL = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_ID}"
 
-# Detecta se estÃ¡ rodando local (arquivo existe) ou na nuvem
+# Detecta se está rodando local (arquivo existe) ou na nuvem
 RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
 
-# Metas diÃ¡rias de produÃ§Ã£o (peÃ§as/dia)
+# Metas diárias de produção (peças/dia)
 METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
 META_TOTAL = sum(METAS.values())  # 15.000
 
 
 # =====================================================================
-# FUNÃ‡Ã•ES
+# FUNÇÕES
 # =====================================================================
 def classificar_estacao(operador):
     if operador is None:
         return "OUTROS"
     op = str(operador).upper().strip()
-    if op in ("MAQUINA", "MÃQUINA"):
+    if op in ("MAQUINA", "MÁQUINA"):
         return "MAQUINA"
     if op in ("MESA 1", "MESA1"):
         return "MESA 1"
@@ -87,10 +87,10 @@ def classificar_estacao(operador):
 @st.cache_data(ttl=300)
 def carregar_dados():
     if RODANDO_LOCAL:
-        # ---- Modo local: lÃª do Excel no Google Drive montado ----
+        # ---- Modo local: lê do Excel no Google Drive montado ----
         df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
     else:
-        # ---- Modo cloud: baixa o .xlsx do Google Drive e lÃª com pandas ----
+        # ---- Modo cloud: baixa o .xlsx do Google Drive e lê com pandas ----
         import io
         import urllib.request
         response = urllib.request.urlopen(GOOGLE_DRIVE_URL)
@@ -122,23 +122,23 @@ def carregar_dados():
 try:
     df_corte = carregar_dados()
 except Exception as e:
-    st.error(f"âŒ Erro ao carregar a planilha: {e}")
+    st.error(f"❌ Erro ao carregar a planilha: {e}")
     if RODANDO_LOCAL:
-        st.info("Verifique se o arquivo estÃ¡ acessÃ­vel em: " + CAMINHO_PLANILHA)
+        st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
     else:
-        st.info("ðŸ“¡ Modo Cloud: verifique se a planilha estÃ¡ compartilhada como 'Qualquer pessoa com o link'.")
+        st.info("📡 Modo Cloud: verifique se a planilha está compartilhada como 'Qualquer pessoa com o link'.")
     st.stop()
 
 # =====================================================================
 # HEADER
 # =====================================================================
-st.markdown('<div class="main-header">âœ‚ï¸ Dashboard Controle de Corte - Mantas</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Acompanhamento de produÃ§Ã£o e desempenho por estaÃ§Ã£o</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">✂️ Dashboard Controle de Corte - Mantas</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Acompanhamento de produção e desempenho por estação</div>', unsafe_allow_html=True)
 
 # =====================================================================
-# SIDEBAR - FILTROS (com persistÃªncia via session_state)
+# SIDEBAR - FILTROS (com persistência via session_state)
 # =====================================================================
-st.sidebar.header("ðŸ” Filtros")
+st.sidebar.header("🔍 Filtros")
 
 df_trabalho = df_corte.copy()
 
@@ -158,27 +158,27 @@ if 'filtro_data_fim' not in st.session_state:
 ops_disponiveis = sorted(df_trabalho['OP'].unique())
 # Validar valores salvos (podem ter sido removidos dos dados)
 default_ops = [op for op in st.session_state.filtro_ops if op in ops_disponiveis]
-ops_selecionadas = st.sidebar.multiselect("ðŸ“‹ Filtrar por OP", options=ops_disponiveis, default=default_ops, key='filtro_ops')
+ops_selecionadas = st.sidebar.multiselect("📋 Filtrar por OP", options=ops_disponiveis, default=default_ops, key='filtro_ops')
 
-# Filtro de EstaÃ§Ã£o
+# Filtro de Estação
 estacoes_disponiveis = sorted(df_trabalho['ESTACAO'].unique())
 default_est = [e for e in st.session_state.filtro_estacoes if e in estacoes_disponiveis]
-estacoes_selecionadas = st.sidebar.multiselect("ðŸ­ Filtrar por EstaÃ§Ã£o", options=estacoes_disponiveis, default=default_est, key='filtro_estacoes')
+estacoes_selecionadas = st.sidebar.multiselect("🏭 Filtrar por Estação", options=estacoes_disponiveis, default=default_est, key='filtro_estacoes')
 
 # Filtro de Produto
 produtos_disponiveis = sorted(df_trabalho['PRODUTO'].dropna().unique())
 default_prod = [p for p in st.session_state.filtro_produtos if p in produtos_disponiveis]
-produtos_selecionados = st.sidebar.multiselect("ðŸ“¦ Filtrar por Produto", options=produtos_disponiveis, default=default_prod, key='filtro_produtos')
+produtos_selecionados = st.sidebar.multiselect("📦 Filtrar por Produto", options=produtos_disponiveis, default=default_prod, key='filtro_produtos')
 
 # Filtro de Dias
-st.sidebar.markdown("### ðŸ“… Filtro de Dias")
+st.sidebar.markdown("### 📅 Filtro de Dias")
 
 if 'filtro_tipo_data' not in st.session_state:
-    st.session_state.filtro_tipo_data = "PerÃ­odo"
+    st.session_state.filtro_tipo_data = "Período"
 
 tipo_filtro = st.sidebar.radio(
     "Tipo de filtro",
-    options=["Um dia", "PerÃ­odo"],
+    options=["Um dia", "Período"],
     index=0 if st.session_state.filtro_tipo_data == "Um dia" else 1,
     key='filtro_tipo_data',
     horizontal=True
@@ -206,7 +206,7 @@ if not df_trabalho.empty:
         st.session_state.filtro_data_fim = dia_selecionado
     else:
         data_inicio = st.sidebar.date_input(
-            "InÃ­cio",
+            "Início",
             value=saved_ini,
             min_value=data_min,
             max_value=data_max,
@@ -239,28 +239,28 @@ if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
         (df_filtrado['DATA'].dt.date <= filtro_datas[1])
     ]
 
-if st.sidebar.button("ðŸ”„ Atualizar Dados"):
+if st.sidebar.button("🔄 Atualizar Dados"):
     st.cache_data.clear()
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.caption(f"Ãšltima atualizaÃ§Ã£o: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+st.sidebar.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 st.sidebar.caption(f"Registros carregados: {len(df_filtrado):,}")
 
 # =====================================================================
 # ABAS PRINCIPAIS
 # =====================================================================
 tab1, tab2, tab3 = st.tabs([
-    "ðŸ“Š VisÃ£o Geral",
-    "ðŸ“‹ Acompanhamento por OP",
-    "ðŸ­ ProduÃ§Ã£o por EstaÃ§Ã£o"
+    "📊 Visão Geral",
+    "📋 Acompanhamento por OP",
+    "🏭 Produção por Estação"
 ])
 
 # =====================================================================
-# TAB 1 - VISÃƒO GERAL
+# TAB 1 - VISÃO GERAL
 # =====================================================================
 with tab1:
-    st.markdown("### ðŸ“Š Indicadores Gerais")
+    st.markdown("### 📊 Indicadores Gerais")
 
     total_pecas = df_filtrado['QUANTIDADE'].sum()
     total_ops = df_filtrado['OP'].nunique()
@@ -274,25 +274,25 @@ with tab1:
 
     # KPIs - Linha 1
     cols_kpi = st.columns(4)
-    cols_kpi[0].metric("âœ‚ï¸ Total de PeÃ§as", f"{total_pecas:,.0f}")
-    cols_kpi[1].metric("ðŸ“‹ Total de OPs", f"{total_ops}")
-    cols_kpi[2].metric("ðŸŽ¨ Cores Diferentes", f"{total_cores}")
-    cols_kpi[3].metric("ðŸ“† Dias Trabalhados", f"{dias_trabalhados}")
+    cols_kpi[0].metric("✂️ Total de Peças", f"{total_pecas:,.0f}")
+    cols_kpi[1].metric("📋 Total de OPs", f"{total_ops}")
+    cols_kpi[2].metric("🎨 Cores Diferentes", f"{total_cores}")
+    cols_kpi[3].metric("📆 Dias Trabalhados", f"{dias_trabalhados}")
 
     # KPIs - Linha 2
     cols_kpi2 = st.columns(4)
-    cols_kpi2[0].metric("âš¡ MÃ©dia PeÃ§as/Dia", f"{media_dia:,.0f}", delta=f"{delta_media:+.1f}% vs Meta {META_TOTAL:,}")
-    cols_kpi2[1].metric("ðŸ”§ MÃ¡quina", f"{pecas_maquina:,.0f}")
-    cols_kpi2[2].metric("ðŸ“ Mesa 1", f"{pecas_mesa1:,.0f}")
-    cols_kpi2[3].metric("ðŸ“ Mesa 2", f"{pecas_mesa2:,.0f}")
+    cols_kpi2[0].metric("⚡ Média Peças/Dia", f"{media_dia:,.0f}", delta=f"{delta_media:+.1f}% vs Meta {META_TOTAL:,}")
+    cols_kpi2[1].metric("🔧 Máquina", f"{pecas_maquina:,.0f}")
+    cols_kpi2[2].metric("📐 Mesa 1", f"{pecas_mesa1:,.0f}")
+    cols_kpi2[3].metric("📐 Mesa 2", f"{pecas_mesa2:,.0f}")
 
     st.markdown("---")
 
-    # GrÃ¡fico de produÃ§Ã£o diÃ¡ria - barras com cor condicional (verde/vermelho vs meta)
-    st.markdown("#### ðŸ“ˆ ProduÃ§Ã£o DiÃ¡ria (PeÃ§as)")
+    # Gráfico de produção diária - barras com cor condicional (verde/vermelho vs meta)
+    st.markdown("#### 📈 Produção Diária (Peças)")
     prod_diaria = df_filtrado.groupby('DATA')['QUANTIDADE'].sum().reset_index().sort_values('DATA')
     prod_diaria['ACIMA_META'] = prod_diaria['QUANTIDADE'] >= META_TOTAL
-    prod_diaria['COR'] = prod_diaria['ACIMA_META'].map({True: 'âœ… Acima da Meta', False: 'âŒ Abaixo da Meta'})
+    prod_diaria['COR'] = prod_diaria['ACIMA_META'].map({True: '✅ Acima da Meta', False: '❌ Abaixo da Meta'})
 
     fig1 = go.Figure()
     # Barras coloridas por meta
@@ -302,11 +302,11 @@ with tab1:
                           name='Acima da Meta', marker_color='#2ca02c', opacity=0.8))
     fig1.add_trace(go.Bar(x=df_abaixo['DATA'], y=df_abaixo['QUANTIDADE'],
                           name='Abaixo da Meta', marker_color='#d62728', opacity=0.7))
-    # MÃ©dia mÃ³vel 5 dias
+    # Média móvel 5 dias
     if len(prod_diaria) >= 5:
         prod_diaria['MM5'] = prod_diaria['QUANTIDADE'].rolling(5, min_periods=1).mean()
         fig1.add_trace(go.Scatter(x=prod_diaria['DATA'], y=prod_diaria['MM5'],
-                                  name='TendÃªncia (5d)', line=dict(color='#ff7f0e', width=3),
+                                  name='Tendência (5d)', line=dict(color='#ff7f0e', width=3),
                                   mode='lines'))
     # Linha de meta
     fig1.add_hline(y=META_TOTAL, line_dash="dash", line_color="#333", line_width=2,
@@ -314,7 +314,7 @@ with tab1:
                    annotation_font_size=12, annotation_font_color="#333")
     fig1.update_layout(height=420, margin=dict(l=20, r=20, t=30, b=20),
                        legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0.5, xanchor='center'),
-                       xaxis_title='', yaxis_title='PeÃ§as',
+                       xaxis_title='', yaxis_title='Peças',
                        plot_bgcolor='rgba(0,0,0,0)')
     fig1.update_xaxes(tickformat='%d/%m/%Y')
     fig1.update_yaxes(gridcolor='rgba(0,0,0,0.06)')
@@ -323,7 +323,7 @@ with tab1:
     col_g1, col_g2 = st.columns(2)
 
     with col_g1:
-        st.markdown("#### ðŸ­ DistribuiÃ§Ã£o por EstaÃ§Ã£o")
+        st.markdown("#### 🏭 Distribuição por Estação")
         dist_estacao = df_filtrado.groupby('ESTACAO')['QUANTIDADE'].sum().reset_index()
         fig2 = px.pie(dist_estacao, values='QUANTIDADE', names='ESTACAO',
                       color_discrete_sequence=px.colors.qualitative.Set2, hole=0.4)
@@ -332,24 +332,24 @@ with tab1:
         st.plotly_chart(fig2, width='stretch')
 
     with col_g2:
-        st.markdown("#### ðŸ“¦ ProduÃ§Ã£o por Produto")
+        st.markdown("#### 📦 Produção por Produto")
         prod_produto = df_filtrado.groupby('PRODUTO')['QUANTIDADE'].sum().reset_index()
         prod_produto = prod_produto.sort_values('QUANTIDADE', ascending=True).tail(15)
         fig3 = px.bar(prod_produto, y='PRODUTO', x='QUANTIDADE', orientation='h',
                       color='QUANTIDADE', color_continuous_scale='Blues',
-                      labels={'QUANTIDADE': 'PeÃ§as', 'PRODUTO': 'Produto'})
+                      labels={'QUANTIDADE': 'Peças', 'PRODUTO': 'Produto'})
         fig3.update_layout(height=450, margin=dict(l=20, r=20, t=30, b=20),
                            showlegend=False, coloraxis_showscale=False)
         st.plotly_chart(fig3, width='stretch')
 
-    st.markdown("#### ðŸŽ¨ Top 15 Cores Mais Cortadas")
+    st.markdown("#### 🎨 Top 15 Cores Mais Cortadas")
     col_cor_l, col_cor_r = st.columns(2)
     with col_cor_l:
         prod_cor = df_filtrado.groupby('COR')['QUANTIDADE'].sum().reset_index()
         prod_cor = prod_cor.sort_values('QUANTIDADE', ascending=True).tail(15)
         fig4 = px.bar(prod_cor, y='COR', x='QUANTIDADE', orientation='h',
                       color='QUANTIDADE', color_continuous_scale='Viridis',
-                      labels={'QUANTIDADE': 'PeÃ§as', 'COR': 'Cor'})
+                      labels={'QUANTIDADE': 'Peças', 'COR': 'Cor'})
         fig4.update_layout(height=400, margin=dict(l=20, r=20, t=30, b=20),
                            showlegend=False, coloraxis_showscale=False)
         st.plotly_chart(fig4, width='stretch')
@@ -359,7 +359,7 @@ with tab1:
         prod_cor_all = df_filtrado.groupby('COR')['QUANTIDADE'].sum().reset_index()
         prod_cor_all = prod_cor_all.sort_values('QUANTIDADE', ascending=False).head(15)
         prod_cor_all['%'] = (prod_cor_all['QUANTIDADE'] / prod_cor_all['QUANTIDADE'].sum() * 100).round(1)
-        prod_cor_all.columns = ['Cor', 'PeÃ§as', '% do Total']
+        prod_cor_all.columns = ['Cor', 'Peças', '% do Total']
         st.dataframe(prod_cor_all, width='stretch', height=400, hide_index=True)
 
 
@@ -367,7 +367,7 @@ with tab1:
 # TAB 2 - ACOMPANHAMENTO POR OP
 # =====================================================================
 with tab2:
-    st.markdown("### ðŸ“‹ Acompanhamento Detalhado por OP")
+    st.markdown("### 📋 Acompanhamento Detalhado por OP")
 
     resumo_op = df_filtrado.groupby('OP').agg(
         Total_Pecas=('QUANTIDADE', 'sum'),
@@ -391,13 +391,13 @@ with tab2:
 
     st.markdown("---")
 
-    op_detalhe = st.selectbox("ðŸ”Ž Selecione uma OP para ver detalhes:", options=resumo_op['OP'].tolist())
+    op_detalhe = st.selectbox("🔎 Selecione uma OP para ver detalhes:", options=resumo_op['OP'].tolist())
 
     if op_detalhe:
         df_op = df_filtrado[df_filtrado['OP'] == op_detalhe]
 
         col_op1, col_op2, col_op3 = st.columns(3)
-        col_op1.metric("PeÃ§as Total", f"{df_op['QUANTIDADE'].sum():,.0f}")
+        col_op1.metric("Peças Total", f"{df_op['QUANTIDADE'].sum():,.0f}")
         col_op2.metric("Cores Cortadas", f"{df_op['COR'].nunique()}")
         col_op3.metric("Produto", df_op['PRODUTO'].iloc[0] if not df_op.empty else "N/A")
 
@@ -406,30 +406,30 @@ with tab2:
 
         fig_op1 = px.bar(cor_op, x='COR', y='QUANTIDADE',
                          color='QUANTIDADE', color_continuous_scale='Blues',
-                         labels={'COR': 'Cor', 'QUANTIDADE': 'PeÃ§as'},
+                         labels={'COR': 'Cor', 'QUANTIDADE': 'Peças'},
                          text='QUANTIDADE')
         fig_op1.update_traces(textposition='outside')
         fig_op1.update_layout(height=450, margin=dict(l=20, r=20, t=30, b=20),
                               coloraxis_showscale=False)
         st.plotly_chart(fig_op1, width='stretch')
 
-        st.markdown(f"#### ðŸ“ Registros Detalhados - OP {op_detalhe}")
+        st.markdown(f"#### 📝 Registros Detalhados - OP {op_detalhe}")
         df_op_display = df_op[['DATA', 'OPERADOR', 'COR', 'QUANTIDADE', 'PRODUTO', 'ESTACAO']].copy()
         df_op_display['DATA'] = df_op_display['DATA'].dt.strftime('%d/%m/%Y')
         st.dataframe(df_op_display, width='stretch', height=300)
 
 
 # =====================================================================
-# TAB 3 - PRODUÃ‡ÃƒO POR ESTAÃ‡ÃƒO
+# TAB 3 - PRODUÇÃO POR ESTAÇÃO
 # =====================================================================
 with tab3:
-    st.markdown("### ðŸ­ ProduÃ§Ã£o por EstaÃ§Ã£o de Corte")
+    st.markdown("### 🏭 Produção por Estação de Corte")
 
     estacoes = ['MAQUINA', 'MESA 1', 'MESA 2']
     cores_estacao = {'MAQUINA': '#1f77b4', 'MESA 1': '#2ca02c', 'MESA 2': '#ff7f0e'}
 
     # Progresso vs Meta - Cards com barra de progresso HTML
-    st.markdown("#### ðŸŽ¯ Progresso vs Meta DiÃ¡ria (MÃ©dia PeÃ§as/Dia)")
+    st.markdown("#### 🎯 Progresso vs Meta Diária (Média Peças/Dia)")
     cols_meta = st.columns(3)
     for i, estacao in enumerate(estacoes):
         df_est_b = df_filtrado[df_filtrado['ESTACAO'] == estacao]
@@ -441,13 +441,13 @@ with tab3:
 
         if pct >= 100:
             cor_prog = '#2ca02c'
-            status = 'âœ… META ATINGIDA'
+            status = '✅ META ATINGIDA'
         elif pct >= 80:
             cor_prog = '#ff7f0e'
-            status = 'âš ï¸ PRÃ“XIMO DA META'
+            status = '⚠️ PRÓXIMO DA META'
         else:
             cor_prog = '#d62728'
-            status = 'âŒ ABAIXO DA META'
+            status = '❌ ABAIXO DA META'
 
         pct_bar = min(pct, 100)
         with cols_meta[i]:
@@ -455,7 +455,7 @@ with tab3:
             <div style="background:#1a1a2e; border-radius:14px; padding:20px; color:white; text-align:center; box-shadow:0 3px 12px rgba(0,0,0,0.2);">
                 <div style="font-size:0.8rem; letter-spacing:1px; color:#aaa; text-transform:uppercase; margin-bottom:4px;">{estacao}</div>
                 <div style="font-size:2.2rem; font-weight:800; color:white; margin:4px 0;">{media_b:,.0f}</div>
-                <div style="font-size:0.85rem; color:#bbb; margin-bottom:10px;">Meta: {meta_b:,} pÃ§s/dia</div>
+                <div style="font-size:0.85rem; color:#bbb; margin-bottom:10px;">Meta: {meta_b:,} pçs/dia</div>
                 <div style="background:#333; border-radius:8px; height:14px; overflow:hidden; margin:8px 0;">
                     <div style="width:{pct_bar:.0f}%; height:100%; background:{cor_prog}; border-radius:8px; transition:width 0.5s;"></div>
                 </div>
@@ -468,7 +468,7 @@ with tab3:
 
     st.markdown("---")
 
-    # MÃ©tricas por estaÃ§Ã£o
+    # Métricas por estação
     cols_est = st.columns(3)
     for i, estacao in enumerate(estacoes):
         df_est = df_filtrado[df_filtrado['ESTACAO'] == estacao]
@@ -481,18 +481,18 @@ with tab3:
             pct_meta = (media_pecas_est / meta_est * 100) if meta_est > 0 else 0
             delta_meta = media_pecas_est - meta_est
 
-            st.metric("Total PeÃ§as", f"{pecas_est:,.0f}")
+            st.metric("Total Peças", f"{pecas_est:,.0f}")
             st.metric("Dias Trabalhados", f"{dias_est}")
-            st.metric("MÃ©dia PeÃ§as/Dia", f"{media_pecas_est:,.0f}", delta=f"{delta_meta:+,.0f} vs Meta {meta_est:,}")
+            st.metric("Média Peças/Dia", f"{media_pecas_est:,.0f}", delta=f"{delta_meta:+,.0f} vs Meta {meta_est:,}")
             st.metric("% da Meta", f"{pct_meta:.1f}%")
 
     st.markdown("---")
 
-    # ProduÃ§Ã£o diÃ¡ria por estaÃ§Ã£o
-    st.markdown("#### ðŸ“ˆ ProduÃ§Ã£o DiÃ¡ria por EstaÃ§Ã£o (com Metas)")
+    # Produção diária por estação
+    st.markdown("#### 📈 Produção Diária por Estação (com Metas)")
     prod_est_dia = df_filtrado.groupby(['DATA', 'ESTACAO'])['QUANTIDADE'].sum().reset_index()
     fig_est1 = px.line(prod_est_dia, x='DATA', y='QUANTIDADE', color='ESTACAO',
-                       labels={'DATA': 'Data', 'QUANTIDADE': 'PeÃ§as', 'ESTACAO': 'EstaÃ§Ã£o'},
+                       labels={'DATA': 'Data', 'QUANTIDADE': 'Peças', 'ESTACAO': 'Estação'},
                        color_discrete_map=cores_estacao, markers=True)
     for est_nome, meta_val in METAS.items():
         fig_est1.add_hline(y=meta_val, line_dash="dot", line_width=1.5,
@@ -506,15 +506,15 @@ with tab3:
     fig_est1.update_xaxes(tickformat='%d/%m/%Y')
     st.plotly_chart(fig_est1, width='stretch')
 
-    # AnÃ¡lise detalhada por estaÃ§Ã£o
-    st.markdown("#### ðŸ“Š AnÃ¡lise Detalhada por EstaÃ§Ã£o")
+    # Análise detalhada por estação
+    st.markdown("#### 📊 Análise Detalhada por Estação")
 
     for estacao in estacoes:
         df_est = df_filtrado[df_filtrado['ESTACAO'] == estacao]
         if df_est.empty:
             continue
 
-        with st.expander(f"ðŸ” {estacao} - AnÃ¡lise Detalhada", expanded=False):
+        with st.expander(f"📐 {estacao} - Análise Detalhada", expanded=False):
             col_e1, col_e2 = st.columns(2)
 
             with col_e1:
@@ -522,23 +522,23 @@ with tab3:
                 fig_tend = go.Figure()
                 fig_tend.add_trace(go.Bar(
                     x=prod_dia_est['DATA'], y=prod_dia_est['QUANTIDADE'],
-                    name='PeÃ§as/Dia', marker_color=cores_estacao[estacao], opacity=0.7
+                    name='Peças/Dia', marker_color=cores_estacao[estacao], opacity=0.7
                 ))
                 if len(prod_dia_est) >= 5:
                     prod_dia_est['MM5'] = prod_dia_est['QUANTIDADE'].rolling(5).mean()
                     fig_tend.add_trace(go.Scatter(
                         x=prod_dia_est['DATA'], y=prod_dia_est['MM5'],
-                        name='MÃ©dia MÃ³vel (5d)', line=dict(color='red', width=2)
+                        name='Média Móvel (5d)', line=dict(color='red', width=2)
                     ))
                 media_est = prod_dia_est['QUANTIDADE'].mean()
                 fig_tend.add_hline(y=media_est, line_dash="dash", line_color="gray",
-                                   annotation_text=f"MÃ©dia: {media_est:,.0f}")
+                                   annotation_text=f"Média: {media_est:,.0f}")
                 meta_estacao = METAS.get(estacao, 0)
                 if meta_estacao > 0:
                     fig_tend.add_hline(y=meta_estacao, line_dash="dot", line_color="green", line_width=2,
-                                       annotation_text=f"ðŸŽ¯ Meta: {meta_estacao:,}",
+                                       annotation_text=f"🎯 Meta: {meta_estacao:,}",
                                        annotation_position="top left")
-                fig_tend.update_layout(title=f"ProduÃ§Ã£o DiÃ¡ria - {estacao}",
+                fig_tend.update_layout(title=f"Produção Diária - {estacao}",
                                        height=400, margin=dict(l=20, r=20, t=40, b=20))
                 fig_tend.update_xaxes(tickformat='%d/%m/%Y')
                 st.plotly_chart(fig_tend, width='stretch')
@@ -547,28 +547,28 @@ with tab3:
                 prod_dia_est2 = df_est.groupby('DATA')['QUANTIDADE'].sum().reset_index()
                 fig_box = px.box(prod_dia_est2, y='QUANTIDADE',
                                  color_discrete_sequence=[cores_estacao[estacao]],
-                                 labels={'QUANTIDADE': 'PeÃ§as/Dia'})
+                                 labels={'QUANTIDADE': 'Peças/Dia'})
                 meta_box = METAS.get(estacao, 0)
                 if meta_box > 0:
                     fig_box.add_hline(y=meta_box, line_dash="dot", line_color="green", line_width=2,
-                                      annotation_text=f"ðŸŽ¯ Meta: {meta_box:,}",
+                                      annotation_text=f"🎯 Meta: {meta_box:,}",
                                       annotation_position="top left")
-                fig_box.update_layout(title=f"ConsistÃªncia - {estacao}",
+                fig_box.update_layout(title=f"Consistência - {estacao}",
                                       height=400, margin=dict(l=20, r=20, t=40, b=20))
                 st.plotly_chart(fig_box, width='stretch')
 
-            # Tabela de estatÃ­sticas
+            # Tabela de estatísticas
             prod_dia_stats = df_est.groupby('DATA')['QUANTIDADE'].sum()
             meta_est_val = METAS.get(estacao, 0)
             pct_meta_est = (prod_dia_stats.mean() / meta_est_val * 100) if meta_est_val > 0 else 0
             dias_acima = (prod_dia_stats >= meta_est_val).sum() if meta_est_val > 0 else 0
             dias_total_est = len(prod_dia_stats)
             stats_df = pd.DataFrame({
-                'EstatÃ­stica': ['ðŸŽ¯ META DIÃRIA', 'ðŸ“Š MÃ©dia/Dia', '% da Meta', 'Dias Acima da Meta',
-                                'Mediana/Dia', 'Desvio PadrÃ£o', 'MÃ­nimo/Dia', 'MÃ¡ximo/Dia',
-                                'Coef. VariaÃ§Ã£o (%)', 'Total PeÃ§as'],
+                'Estatística': ['🎯 META DIÁRIA', '📊 Média/Dia', '% da Meta', 'Dias Acima da Meta',
+                                'Mediana/Dia', 'Desvio Padrão', 'Mínimo/Dia', 'Máximo/Dia',
+                                'Coef. Variação (%)', 'Total Peças'],
                 'Valor': [
-                    f"{meta_est_val:,} peÃ§as",
+                    f"{meta_est_val:,} peças",
                     f"{prod_dia_stats.mean():,.0f}",
                     f"{pct_meta_est:.1f}%",
                     f"{dias_acima} de {dias_total_est} ({(dias_acima/max(dias_total_est,1)*100):.0f}%)",
@@ -583,7 +583,7 @@ with tab3:
             st.dataframe(stats_df, width='stretch', hide_index=True)
 
     # Comparativo semanal
-    st.markdown("#### ðŸ“… ProduÃ§Ã£o Semanal Comparativa (com Meta Semanal)")
+    st.markdown("#### 📅 Produção Semanal Comparativa (com Meta Semanal)")
     prod_semanal = df_filtrado.groupby(['SEMANA', 'ESTACAO'])['QUANTIDADE'].sum().reset_index()
     dias_por_semana = df_filtrado.groupby(['SEMANA', 'ESTACAO'])['DATA'].apply(lambda x: x.dt.date.nunique()).reset_index(name='DIAS')
     prod_semanal = prod_semanal.merge(dias_por_semana, on=['SEMANA', 'ESTACAO'], how='left')
@@ -603,19 +603,19 @@ with tab3:
         ))
     fig_sem.update_layout(
         height=500, margin=dict(l=20, r=20, t=30, b=20),
-        barmode='group', xaxis_title='Semana', yaxis_title='PeÃ§as',
+        barmode='group', xaxis_title='Semana', yaxis_title='Peças',
         legend=dict(orientation='h', yanchor='bottom', y=1.02)
     )
     st.plotly_chart(fig_sem, width='stretch')
 
 
 # =====================================================================
-# RODAPÃ‰
+# RODAPÉ
 # =====================================================================
 st.markdown("---")
 st.markdown(
     "<div style='text-align: center; color: #888; font-size: 0.85rem;'>"
-    "âœ‚ï¸ Dashboard Controle de Corte - Mantas | Alimentado pela planilha CONTROLE GERAL MANTAS.xlsx | "
+    "✂️ Dashboard Controle de Corte - Mantas | Alimentado pela planilha CONTROLE GERAL MANTAS.xlsx | "
     f"Atualizado em {datetime.now().strftime('%d/%m/%Y %H:%M')}"
     "</div>",
     unsafe_allow_html=True
