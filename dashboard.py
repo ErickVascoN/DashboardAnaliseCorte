@@ -55,9 +55,11 @@ st.markdown("""
 # CONSTANTES
 # =====================================================================
 CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
-GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1iGj4-vknwzepbrHdRz1PwisZU2foU7aW/edit?gid=1271886873#gid=1271886873"
 
-# Detecta se está rodando local (arquivo existe) ou na nuvem (usa Google Sheets)
+# URL de exportação CSV do Google Sheets (planilha precisa estar compartilhada como "Qualquer pessoa com o link")
+GOOGLE_SHEETS_CSV = "https://docs.google.com/spreadsheets/d/1iGj4-vknwzepbrHdRz1PwisZU2foU7aW/export?format=csv&gid=1271886873"
+
+# Detecta se está rodando local (arquivo existe) ou na nuvem
 RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
 
 # Metas diárias de produção (peças/dia)
@@ -87,25 +89,11 @@ def carregar_dados():
         # ---- Modo local: lê do Excel no Google Drive montado ----
         df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
     else:
-        # ---- Modo cloud: lê do Google Sheets via API ----
-        import gspread
-        from google.oauth2.service_account import Credentials
-
-        scopes = [
-            "https://www.googleapis.com/auth/spreadsheets.readonly",
-            "https://www.googleapis.com/auth/drive.readonly",
-        ]
-        creds = Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"], scopes=scopes
-        )
-        client = gspread.authorize(creds)
-        sh = client.open_by_url(GOOGLE_SHEETS_URL)
-        worksheet = sh.worksheet('CONTROLE DE CORTE')
-        data = worksheet.get_all_values()
-        # Cabeçalho na linha 1, colunas B-I = índices 1-8
-        header = data[0][1:9]
-        rows = [row[1:9] for row in data[1:] if any(cell.strip() for cell in row[1:9])]
-        df_corte = pd.DataFrame(rows, columns=header)
+        # ---- Modo cloud: lê CSV público do Google Sheets ----
+        df_corte = pd.read_csv(GOOGLE_SHEETS_CSV)
+        # Selecionar colunas B-I (indices 1-8) se houver coluna extra
+        if df_corte.shape[1] > 8:
+            df_corte = df_corte.iloc[:, 1:9]
 
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
@@ -136,7 +124,7 @@ except Exception as e:
     if RODANDO_LOCAL:
         st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
     else:
-        st.info("📡 Modo Cloud: verifique se os secrets (gcp_service_account) estão configurados no Streamlit Cloud.")
+        st.info("📡 Modo Cloud: verifique se a planilha está compartilhada como 'Qualquer pessoa com o link'.")
     st.stop()
 
 # =====================================================================
