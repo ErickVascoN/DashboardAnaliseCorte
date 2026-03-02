@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import locale
+import os
 
 # Configurar locale brasileiro para datas
 try:
@@ -55,6 +56,9 @@ st.markdown("""
 # =====================================================================
 CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
 
+# Detecta se está rodando local (arquivo existe) ou na nuvem (usa Google Sheets)
+RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
+
 # Metas diárias de produção (peças/dia)
 METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
 META_TOTAL = sum(METAS.values())  # 15.000
@@ -78,10 +82,36 @@ def classificar_estacao(operador):
 
 @st.cache_data(ttl=300)
 def carregar_dados():
-    # ---- CONTROLE DE CORTE ----
-    df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
+    if RODANDO_LOCAL:
+        # ---- Modo local: lê do Excel no Google Drive montado ----
+        df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
+    else:
+        # ---- Modo cloud: lê do Google Sheets via API ----
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets.readonly",
+            "https://www.googleapis.com/auth/drive.readonly",
+        ]
+        creds = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"], scopes=scopes
+        )
+        client = gspread.authorize(creds)
+        spreadsheet_url = st.secrets["google_sheets"]["spreadsheet_url"]
+        sh = client.open_by_url(spreadsheet_url)
+        worksheet = sh.worksheet('CONTROLE DE CORTE')
+        data = worksheet.get_all_values()
+        # Pegar cabeçalho da linha 1 (colunas B-I = índices 1-8)
+        header = data[0][1:9]
+        rows = [row[1:9] for row in data[1:] if any(cell.strip() for cell in row[1:9])]
+        df_corte = pd.DataFrame(rows, columns=header)
+
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
+    # Remover linhas onde DATA ou OP são strings vazias (vindas do Google Sheets)
+    df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
+    df_corte = df_corte[df_corte['OP'].astype(str).str.strip() != '']
     df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], errors='coerce')
     df_corte = df_corte.dropna(subset=['DATA'])
     df_corte['OP'] = df_corte['OP'].astype(str).str.strip()
@@ -104,7 +134,10 @@ try:
     df_corte = carregar_dados()
 except Exception as e:
     st.error(f"❌ Erro ao carregar a planilha: {e}")
-    st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
+    if RODANDO_LOCAL:
+        st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
+    else:
+        st.info("📡 Modo Cloud: verifique se os secrets (gcp_service_account e google_sheets.spreadsheet_url) estão configurados corretamente no Streamlit Cloud.")
     st.stop()
 
 # =====================================================================
@@ -148,26 +181,60 @@ produtos_disponiveis = sorted(df_trabalho['PRODUTO'].dropna().unique())
 default_prod = [p for p in st.session_state.filtro_produtos if p in produtos_disponiveis]
 produtos_selecionados = st.sidebar.multiselect("📦 Filtrar por Produto", options=produtos_disponiveis, default=default_prod, key='filtro_produtos')
 
-# Filtro de data
+# Filtro de Dias
+st.sidebar.markdown("### 📅 Filtro de Dias")
+
+if 'filtro_tipo_data' not in st.session_state:
+    st.session_state.filtro_tipo_data = "Período"
+
+tipo_filtro = st.sidebar.radio(
+    "Tipo de filtro",
+    options=["Um dia", "Período"],
+    index=0 if st.session_state.filtro_tipo_data == "Um dia" else 1,
+    key='filtro_tipo_data',
+    horizontal=True
+)
+
 if not df_trabalho.empty:
     data_min = df_trabalho['DATA'].min().date()
     data_max = df_trabalho['DATA'].max().date()
-    # Garantir que valores salvos estejam dentro do range
     saved_ini = st.session_state.filtro_data_ini if st.session_state.filtro_data_ini else data_min
     saved_fim = st.session_state.filtro_data_fim if st.session_state.filtro_data_fim else data_max
     saved_ini = max(saved_ini, data_min)
     saved_fim = min(saved_fim, data_max)
-    filtro_datas = st.sidebar.date_input(
-        "📆 Período",
-        value=(saved_ini, saved_fim),
-        min_value=data_min,
-        max_value=data_max,
-        format="DD/MM/YYYY"
-    )
-    # Salvar datas no session_state
-    if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
-        st.session_state.filtro_data_ini = filtro_datas[0]
-        st.session_state.filtro_data_fim = filtro_datas[1]
+
+    if tipo_filtro == "Um dia":
+        dia_selecionado = st.sidebar.date_input(
+            "Data",
+            value=saved_fim,
+            min_value=data_min,
+            max_value=data_max,
+            format="DD/MM/YYYY",
+            key='filtro_dia_unico'
+        )
+        filtro_datas = (dia_selecionado, dia_selecionado)
+        st.session_state.filtro_data_ini = dia_selecionado
+        st.session_state.filtro_data_fim = dia_selecionado
+    else:
+        data_inicio = st.sidebar.date_input(
+            "Início",
+            value=saved_ini,
+            min_value=data_min,
+            max_value=data_max,
+            format="DD/MM/YYYY",
+            key='filtro_data_inicio'
+        )
+        data_fim = st.sidebar.date_input(
+            "Fim",
+            value=saved_fim,
+            min_value=data_min,
+            max_value=data_max,
+            format="DD/MM/YYYY",
+            key='filtro_data_fim_input'
+        )
+        filtro_datas = (data_inicio, data_fim)
+        st.session_state.filtro_data_ini = data_inicio
+        st.session_state.filtro_data_fim = data_fim
 
 # Aplicar filtros
 df_filtrado = df_trabalho.copy()
