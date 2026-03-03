@@ -15,9 +15,7 @@ except locale.Error:
     except locale.Error:
         pass  # fallback, usa padrão do sistema
 
-# =====================================================================
 # CONFIGURAÇÃO DA PÁGINA
-# =====================================================================
 st.set_page_config(
     page_title="Dashboard Controle de Corte",
     page_icon="✂️",
@@ -51,14 +49,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# =====================================================================
+
 # CONSTANTES
-# =====================================================================
 CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
 
-# URL de download direto do Google Drive (arquivo .xlsx compartilhado publicamente)
-GOOGLE_DRIVE_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
-GOOGLE_DRIVE_URL = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_ID}"
+# URL de exportação CSV do Google Sheets (planilha compartilhada publicamente)
+GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
+GOOGLE_SHEETS_GID = "977039644"
+GOOGLE_SHEETS_CSV_URL = (
+    f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
+    f"/export?format=csv&gid={GOOGLE_SHEETS_GID}"
+)
 
 # Detecta se está rodando local (arquivo existe) ou na nuvem
 RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
@@ -68,9 +69,8 @@ METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
 META_TOTAL = sum(METAS.values())  # 15.000
 
 
-# =====================================================================
+
 # FUNÇÕES
-# =====================================================================
 def classificar_estacao(operador):
     if operador is None:
         return "OUTROS"
@@ -90,12 +90,15 @@ def carregar_dados():
         # ---- Modo local: lê do Excel no Google Drive montado ----
         df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
     else:
-        # ---- Modo cloud: baixa o .xlsx do Google Drive e lê com pandas ----
+        # ---- Modo cloud: lê CSV exportado do Google Sheets ----
         import io
         import urllib.request
-        response = urllib.request.urlopen(GOOGLE_DRIVE_URL)
-        excel_data = io.BytesIO(response.read())
-        df_corte = pd.read_excel(excel_data, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
+        req = urllib.request.Request(GOOGLE_SHEETS_CSV_URL, headers={'User-Agent': 'Mozilla/5.0'})
+        response = urllib.request.urlopen(req)
+        csv_data = io.StringIO(response.read().decode('utf-8'))
+        df_corte = pd.read_csv(csv_data, header=0)
+        # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
+        df_corte = df_corte.iloc[:, 1:9]
 
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
@@ -126,7 +129,7 @@ except Exception as e:
     if RODANDO_LOCAL:
         st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
     else:
-        st.info("📡 Modo Cloud: verifique se a planilha está compartilhada como 'Qualquer pessoa com o link'.")
+        st.info("📡 Modo Cloud: verifique se a planilha Google Sheets está compartilhada como 'Qualquer pessoa com o link'.")
     st.stop()
 
 # =====================================================================
