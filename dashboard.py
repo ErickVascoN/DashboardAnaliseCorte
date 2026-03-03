@@ -4,7 +4,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import locale
-import os
+import io
+import urllib.request
 
 # Configurar locale brasileiro para datas
 try:
@@ -51,18 +52,14 @@ st.markdown("""
 
 
 # CONSTANTES
-CAMINHO_PLANILHA = r"G:\Meu Drive\Controle de corte Erick\CONTROLE GERAL MANTAS.xlsx"
 
-# URL de exportação CSV do Google Sheets (planilha compartilhada publicamente)
+# URL de exportação CSV do Google Sheets (fonte única de dados)
 GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
 GOOGLE_SHEETS_GID = "977039644"
 GOOGLE_SHEETS_CSV_URL = (
     f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
     f"/export?format=csv&gid={GOOGLE_SHEETS_GID}"
 )
-
-# Detecta se está rodando local (arquivo existe) ou na nuvem
-RODANDO_LOCAL = os.path.exists(CAMINHO_PLANILHA)
 
 # Metas diárias de produção (peças/dia)
 METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
@@ -86,19 +83,13 @@ def classificar_estacao(operador):
 
 @st.cache_data(ttl=300)
 def carregar_dados():
-    if RODANDO_LOCAL:
-        # ---- Modo local: lê do Excel no Google Drive montado ----
-        df_corte = pd.read_excel(CAMINHO_PLANILHA, sheet_name='CONTROLE DE CORTE', header=0, usecols='B:I')
-    else:
-        # ---- Modo cloud: lê CSV exportado do Google Sheets ----
-        import io
-        import urllib.request
-        req = urllib.request.Request(GOOGLE_SHEETS_CSV_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        response = urllib.request.urlopen(req)
-        csv_data = io.StringIO(response.read().decode('utf-8'))
-        df_corte = pd.read_csv(csv_data, header=0)
-        # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
-        df_corte = df_corte.iloc[:, 1:9]
+    # Sempre lê do Google Sheets (fonte única de dados)
+    req = urllib.request.Request(GOOGLE_SHEETS_CSV_URL, headers={'User-Agent': 'Mozilla/5.0'})
+    response = urllib.request.urlopen(req)
+    csv_data = io.StringIO(response.read().decode('utf-8'))
+    df_corte = pd.read_csv(csv_data, header=0)
+    # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
+    df_corte = df_corte.iloc[:, 1:9]
 
     df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
@@ -126,10 +117,7 @@ try:
     df_corte = carregar_dados()
 except Exception as e:
     st.error(f"❌ Erro ao carregar a planilha: {e}")
-    if RODANDO_LOCAL:
-        st.info("Verifique se o arquivo está acessível em: " + CAMINHO_PLANILHA)
-    else:
-        st.info("📡 Modo Cloud: verifique se a planilha Google Sheets está compartilhada como 'Qualquer pessoa com o link'.")
+    st.info("📡 Verifique se a planilha Google Sheets está compartilhada como 'Qualquer pessoa com o link'.")
     st.stop()
 
 # =====================================================================
