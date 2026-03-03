@@ -204,7 +204,7 @@ if not df_trabalho.empty:
             format="DD/MM/YYYY",
             key='filtro_data_inicio'
         )
-        data_fim = st.sidebar.date_input(
+        Ultimo_corte = st.sidebar.date_input(
             "Fim",
             value=saved_fim,
             min_value=data_min,
@@ -212,9 +212,9 @@ if not df_trabalho.empty:
             format="DD/MM/YYYY",
             key='filtro_data_fim_input'
         )
-        filtro_datas = (data_inicio, data_fim)
+        filtro_datas = (data_inicio, Ultimo_corte)
         st.session_state.filtro_data_ini = data_inicio
-        st.session_state.filtro_data_fim = data_fim
+        st.session_state.filtro_data_fim = Ultimo_corte
 
 # Aplicar filtros
 df_filtrado = df_trabalho.copy()
@@ -238,18 +238,16 @@ st.sidebar.markdown("---")
 st.sidebar.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 st.sidebar.caption(f"Registros carregados: {len(df_filtrado):,}")
 
-# =====================================================================
-# ABAS PRINCIPAIS
-# =====================================================================
+# ABAS 
 tab1, tab2, tab3 = st.tabs([
     "📊 Visão Geral",
     "📋 Acompanhamento por OP",
     "🏭 Produção por Estação"
 ])
 
-# =====================================================================
+
 # TAB 1 - VISÃO GERAL
-# =====================================================================
+
 with tab1:
     st.markdown("### 📊 Indicadores Gerais")
 
@@ -353,10 +351,7 @@ with tab1:
         prod_cor_all.columns = ['Cor', 'Peças', '% do Total']
         st.dataframe(prod_cor_all, width='stretch', height=400, hide_index=True)
 
-
-# =====================================================================
 # TAB 2 - ACOMPANHAMENTO POR OP
-# =====================================================================
 with tab2:
     st.markdown("### 📋 Acompanhamento Detalhado por OP")
 
@@ -365,7 +360,7 @@ with tab2:
         Qtd_Cores=('COR', 'nunique'),
         Produto=('PRODUTO', 'first'),
         Data_Inicio=('DATA', 'min'),
-        Data_Fim=('DATA', 'max'),
+        Ultimo_corte=('DATA', 'max'),
         Dias_Producao=('DATA', lambda x: x.dt.date.nunique())
     ).reset_index()
     resumo_op = resumo_op.sort_values('Total_Pecas', ascending=False)
@@ -375,7 +370,7 @@ with tab2:
         resumo_op.style.format({
             'Total_Pecas': '{:,.0f}',
             'Data_Inicio': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else '',
-            'Data_Fim': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else ''
+            'Ultimo_corte': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else ''
         }),
         width='stretch', height=400
     )
