@@ -95,7 +95,7 @@ def carregar_dados():
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
     df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
     df_corte = df_corte[df_corte['OP'].astype(str).str.strip() != '']
-    df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], errors='coerce')
+    df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], dayfirst=True, errors='coerce')
     df_corte = df_corte.dropna(subset=['DATA'])
     df_corte['OP'] = df_corte['OP'].astype(str).str.strip()
     df_corte['COR'] = df_corte['COR'].astype(str).str.strip().str.upper()
