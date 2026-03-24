@@ -91,7 +91,7 @@ def carregar_dados():
     # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
     df_corte = df_corte.iloc[:, 1:9]
 
-    df_corte.columns = ['DATA', 'OP', 'OPERADOR', 'COR', 'QUANTIDADE', 'KG', 'PRODUTO', 'OBSERVACAO']
+    df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], format='mixed', dayfirst=True, errors='coerce')
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
     df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
     df_corte = df_corte[df_corte['OP'].astype(str).str.strip() != '']
@@ -370,7 +370,7 @@ with tab2:
         resumo_op.style.format({
             'Total_Pecas': '{:,.0f}',
             'Data_Inicio': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else '',
-            'Ultimo_corte': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else ''
+            'Data_Fim': lambda x: x.strftime('%d/%m/%Y') if pd.notna(x) else ''
         }),
         width='stretch', height=400
     )
