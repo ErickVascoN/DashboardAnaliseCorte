@@ -169,17 +169,20 @@ if 'filtro_data_fim' not in st.session_state:
 ops_disponiveis = sorted(df_trabalho['OP'].unique())
 # Validar valores salvos (podem ter sido removidos dos dados)
 default_ops = [op for op in st.session_state.filtro_ops if op in ops_disponiveis]
-ops_selecionadas = st.sidebar.multiselect("📋 Filtrar por OP", options=ops_disponiveis, default=default_ops, key='filtro_ops')
+ops_selecionadas = st.sidebar.multiselect("📋 Filtrar por OP", options=ops_disponiveis, default=default_ops)
+st.session_state.filtro_ops = ops_selecionadas
 
 # Filtro de Estação
 estacoes_disponiveis = sorted(df_trabalho['ESTACAO'].unique())
 default_est = [e for e in st.session_state.filtro_estacoes if e in estacoes_disponiveis]
-estacoes_selecionadas = st.sidebar.multiselect("🏭 Filtrar por Estação", options=estacoes_disponiveis, default=default_est, key='filtro_estacoes')
+estacoes_selecionadas = st.sidebar.multiselect("🏭 Filtrar por Estação", options=estacoes_disponiveis, default=default_est)
+st.session_state.filtro_estacoes = estacoes_selecionadas
 
 # Filtro de Produto
 produtos_disponiveis = sorted(df_trabalho['PRODUTO'].dropna().unique())
 default_prod = [p for p in st.session_state.filtro_produtos if p in produtos_disponiveis]
-produtos_selecionados = st.sidebar.multiselect("📦 Filtrar por Produto", options=produtos_disponiveis, default=default_prod, key='filtro_produtos')
+produtos_selecionados = st.sidebar.multiselect("📦 Filtrar por Produto", options=produtos_disponiveis, default=default_prod)
+st.session_state.filtro_produtos = produtos_selecionados
 
 # Filtro de Dias
 st.sidebar.markdown("### 📅 Filtro de Dias")
@@ -191,9 +194,9 @@ tipo_filtro = st.sidebar.radio(
     "Tipo de filtro",
     options=["Um dia", "Período"],
     index=0 if st.session_state.filtro_tipo_data == "Um dia" else 1,
-    key='filtro_tipo_data',
     horizontal=True
 )
+st.session_state.filtro_tipo_data = tipo_filtro
 
 if not df_trabalho.empty:
     data_min = df_trabalho['DATA'].min().date()
@@ -209,8 +212,7 @@ if not df_trabalho.empty:
             value=saved_fim,
             min_value=data_min,
             max_value=data_max,
-            format="DD/MM/YYYY",
-            key='filtro_dia_unico'
+            format="DD/MM/YYYY"
         )
         filtro_datas = (dia_selecionado, dia_selecionado)
         st.session_state.filtro_data_ini = dia_selecionado
@@ -221,16 +223,14 @@ if not df_trabalho.empty:
             value=saved_ini,
             min_value=data_min,
             max_value=data_max,
-            format="DD/MM/YYYY",
-            key='filtro_data_inicio'
+            format="DD/MM/YYYY"
         )
         Ultimo_corte = st.sidebar.date_input(
             "Fim",
             value=saved_fim,
             min_value=data_min,
             max_value=data_max,
-            format="DD/MM/YYYY",
-            key='filtro_data_fim_input'
+            format="DD/MM/YYYY"
         )
         filtro_datas = (data_inicio, Ultimo_corte)
         st.session_state.filtro_data_ini = data_inicio
