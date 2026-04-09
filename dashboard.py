@@ -6,6 +6,7 @@ from datetime import datetime
 import locale
 import io
 import urllib.request
+from urllib.error import HTTPError, URLError
 
 # Configurar locale brasileiro para datas
 try:
@@ -56,10 +57,16 @@ st.markdown("""
 # URL de exportação CSV do Google Sheets (fonte única de dados)
 GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
 GOOGLE_SHEETS_GID = "977039644"
-GOOGLE_SHEETS_CSV_URL = (
-    f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
-    f"/export?format=csv&gid={GOOGLE_SHEETS_GID}"
-)
+GOOGLE_SHEETS_CSV_URLS = [
+    (
+        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
+        f"/export?format=csv&gid={GOOGLE_SHEETS_GID}"
+    ),
+    (
+        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
+        f"/gviz/tq?tqx=out:csv&gid={GOOGLE_SHEETS_GID}"
+    ),
+]
 
 # Metas diárias de produção (peças/dia)
 METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
@@ -81,12 +88,25 @@ def classificar_estacao(operador):
     return "MESA 2"
 
 
+def baixar_csv_google_sheets():
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    ultimo_erro = None
+
+    for url in GOOGLE_SHEETS_CSV_URLS:
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=30) as response:
+                return io.StringIO(response.read().decode('utf-8'))
+        except (HTTPError, URLError, TimeoutError) as erro:
+            ultimo_erro = erro
+
+    raise RuntimeError(f"Falha ao baixar CSV do Google Sheets. Ultimo erro: {ultimo_erro}")
+
+
 @st.cache_data(ttl=300)
 def carregar_dados():
     # Sempre lê do Google Sheets (fonte única de dados)
-    req = urllib.request.Request(GOOGLE_SHEETS_CSV_URL, headers={'User-Agent': 'Mozilla/5.0'})
-    response = urllib.request.urlopen(req)
-    csv_data = io.StringIO(response.read().decode('utf-8'))
+    csv_data = baixar_csv_google_sheets()
     df_corte = pd.read_csv(csv_data, header=0)
     # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
     df_corte = df_corte.iloc[:, 1:9]
