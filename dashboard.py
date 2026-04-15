@@ -75,17 +75,7 @@ META_TOTAL = sum(METAS.values())  # 15.000
 
 
 # FUNÇÕES
-def classificar_estacao(operador):
-    if operador is None:
-        return "OUTROS"
-    op = str(operador).upper().strip()
-    if op in ("MAQUINA", "MÁQUINA"):
-        return "MAQUINA"
-    if op in ("MESA 1", "MESA1"):
-        return "MESA 1"
-    if "(MESA)" in op:
-        return "MESA 1"
-    return "MESA 2"
+# Função removida: classificar_estacao - agora a estação vem direto da planilha
 
 
 def baixar_csv_google_sheets():
@@ -119,7 +109,7 @@ def carregar_dados():
     df_corte.columns = df_corte.columns.str.strip()
 
     # Verificar colunas obrigatórias
-    colunas_obrigatorias = ['DATA', 'OP', 'COR', 'QUANTIDADE', 'OPERADOR', 'PRODUTO']
+    colunas_obrigatorias = ['DATA', 'OP', 'COR', 'QUANTIDADE', 'ESTAÇÃO DE CORTE', 'PRODUTO']
     colunas_faltantes = [col for col in colunas_obrigatorias if col not in df_corte.columns]
     
     if colunas_faltantes:
@@ -137,9 +127,8 @@ def carregar_dados():
     df_corte['OP'] = df_corte['OP'].astype(str).str.strip()
     df_corte['COR'] = df_corte['COR'].astype(str).str.strip().str.upper()
     df_corte['QUANTIDADE'] = pd.to_numeric(df_corte['QUANTIDADE'], errors='coerce').fillna(0).astype(int)
-    df_corte['OPERADOR'] = df_corte['OPERADOR'].astype(str).str.strip()
+    df_corte['ESTACAO'] = df_corte['ESTAÇÃO DE CORTE'].astype(str).str.strip()
     df_corte['PRODUTO'] = df_corte['PRODUTO'].astype(str).str.strip()
-    df_corte['ESTACAO'] = df_corte['OPERADOR'].apply(classificar_estacao)
     df_corte['SEMANA'] = df_corte['DATA'].dt.isocalendar().week.astype(int)
     df_corte['MES'] = df_corte['DATA'].dt.month
     df_corte['DIA_SEMANA'] = df_corte['DATA'].dt.day_name()
@@ -155,7 +144,7 @@ try:
 except KeyError as e:
     st.error(f"❌ Erro de coluna: {e}")
     st.error("📋 Verifique se a planilha Google Sheets tem as seguintes colunas (em qualquer ordem):")
-    st.error("DATA, OP, COR, QUANTIDADE, OPERADOR, PRODUTO")
+    st.error("DATA, OP, COR, QUANTIDADE, ESTAÇÃO DE CORTE, PRODUTO")
     st.info("📡 Também verifique se a planilha está compartilhada como 'Qualquer pessoa com o link'.")
     st.stop()
 except Exception as e:
@@ -443,7 +432,7 @@ with tab2:
         st.plotly_chart(fig_op1, width='stretch')
 
         st.markdown(f"#### 📝 Registros Detalhados - OP {op_detalhe}")
-        df_op_display = df_op[['DATA', 'OPERADOR', 'COR', 'QUANTIDADE', 'PRODUTO', 'ESTACAO']].copy()
+        df_op_display = df_op[['DATA', 'ESTACAO', 'COR', 'QUANTIDADE', 'PRODUTO']].copy()
         df_op_display['DATA'] = df_op_display['DATA'].dt.strftime('%d/%m/%Y')
         st.dataframe(df_op_display, width='stretch', height=300)
 
