@@ -111,6 +111,23 @@ def carregar_dados():
     # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
     df_corte = df_corte.iloc[:, 1:9]
 
+    # Debug: mostrar colunas disponíveis e seus tipos
+    # print(f"Colunas carregadas: {df_corte.columns.tolist()}")
+    # print(f"Tipos de dados: {df_corte.dtypes}")
+
+    # Limpar problemas de espaços em branco nos nomes das colunas
+    df_corte.columns = df_corte.columns.str.strip()
+
+    # Verificar colunas obrigatórias
+    colunas_obrigatorias = ['DATA', 'OP', 'COR', 'QUANTIDADE', 'OPERADOR', 'PRODUTO']
+    colunas_faltantes = [col for col in colunas_obrigatorias if col not in df_corte.columns]
+    
+    if colunas_faltantes:
+        raise KeyError(
+            f"Colunas obrigatórias faltando na planilha: {', '.join(colunas_faltantes)}. "
+            f"Colunas disponíveis: {', '.join(df_corte.columns.tolist())}"
+        )
+
     df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], format='mixed', dayfirst=True, errors='coerce')
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
     df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
@@ -135,6 +152,12 @@ def carregar_dados():
 # =====================================================================
 try:
     df_corte = carregar_dados()
+except KeyError as e:
+    st.error(f"❌ Erro de coluna: {e}")
+    st.error("📋 Verifique se a planilha Google Sheets tem as seguintes colunas (em qualquer ordem):")
+    st.error("DATA, OP, COR, QUANTIDADE, OPERADOR, PRODUTO")
+    st.info("📡 Também verifique se a planilha está compartilhada como 'Qualquer pessoa com o link'.")
+    st.stop()
 except Exception as e:
     st.error(f"❌ Erro ao carregar a planilha: {e}")
     st.info("📡 Verifique se a planilha Google Sheets está compartilhada como 'Qualquer pessoa com o link'.")
