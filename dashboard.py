@@ -56,7 +56,7 @@ st.markdown("""
 
 # URL de exportação CSV do Google Sheets (fonte única de dados)
 GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
-GOOGLE_SHEETS_GID = "977039644"
+GOOGLE_SHEETS_GID = "1807180525"
 GOOGLE_SHEETS_CSV_URLS = [
     (
         f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
@@ -178,14 +178,14 @@ if 'filtro_data_fim' not in st.session_state:
     st.session_state.filtro_data_fim = df_trabalho['DATA'].max().date() if not df_trabalho.empty else None
 
 # Filtro de OP
-ops_disponiveis = sorted(df_trabalho['OP'].unique())
+ops_disponiveis = sorted(df_trabalho['OP'].dropna().unique())
 # Validar valores salvos (podem ter sido removidos dos dados)
 default_ops = [op for op in st.session_state.filtro_ops if op in ops_disponiveis]
 ops_selecionadas = st.sidebar.multiselect("📋 Filtrar por OP", options=ops_disponiveis, default=default_ops)
 st.session_state.filtro_ops = ops_selecionadas
 
 # Filtro de Estação
-estacoes_disponiveis = sorted(df_trabalho['ESTACAO'].unique())
+estacoes_disponiveis = sorted(df_trabalho['ESTACAO'].dropna().unique())
 default_est = [e for e in st.session_state.filtro_estacoes if e in estacoes_disponiveis]
 estacoes_selecionadas = st.sidebar.multiselect("🏭 Filtrar por Estação", options=estacoes_disponiveis, default=default_est)
 st.session_state.filtro_estacoes = estacoes_selecionadas
