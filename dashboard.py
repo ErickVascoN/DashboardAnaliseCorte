@@ -55,8 +55,8 @@ st.markdown("""
 # CONSTANTES
 
 # URL de exportação CSV do Google Sheets (fonte única de dados)
-GOOGLE_SHEETS_ID = "1KFTWkWokqt_u_jow0yr_z5LZp9mw8Rz9J25sUBjbiAs"
-GOOGLE_SHEETS_GID = "953377978"
+GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
+GOOGLE_SHEETS_GID = "1903079373"
 GOOGLE_SHEETS_CSV_URLS = [
     (
         f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
@@ -93,20 +93,17 @@ def baixar_csv_google_sheets():
     raise RuntimeError(f"Falha ao baixar CSV do Google Sheets. Ultimo erro: {ultimo_erro}")
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)  # Reduzido de 300 para 60 segundos para atualizar mais frequentemente
 def carregar_dados():
     # Sempre lê do Google Sheets (fonte única de dados)
     csv_data = baixar_csv_google_sheets()
     df_corte = pd.read_csv(csv_data, header=0)
-    # Primeira coluna é vazia (col A do Excel) e última é extra; manter apenas B:I
-    df_corte = df_corte.iloc[:, 1:9]
-
-    # Debug: mostrar colunas disponíveis e seus tipos
-    # print(f"Colunas carregadas: {df_corte.columns.tolist()}")
-    # print(f"Tipos de dados: {df_corte.dtypes}")
-
+    
     # Limpar problemas de espaços em branco nos nomes das colunas
     df_corte.columns = df_corte.columns.str.strip()
+    
+    # Remover colunas vazias ou desnecessárias
+    df_corte = df_corte.drop(columns=[col for col in df_corte.columns if 'Unnamed' in col or 'Coluna' in col], errors='ignore')
 
     # Verificar colunas obrigatórias
     colunas_obrigatorias = ['DATA', 'OP', 'COR', 'QUANTIDADE', 'ESTAÇÃO DE CORTE', 'PRODUTO']
@@ -120,10 +117,7 @@ def carregar_dados():
 
     df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], format='mixed', dayfirst=True, errors='coerce')
     df_corte = df_corte.dropna(subset=['DATA', 'OP'], how='any')
-    df_corte = df_corte[df_corte['DATA'].astype(str).str.strip() != '']
     df_corte = df_corte[df_corte['OP'].astype(str).str.strip() != '']
-    df_corte['DATA'] = pd.to_datetime(df_corte['DATA'], dayfirst=True, errors='coerce')
-    df_corte = df_corte.dropna(subset=['DATA'])
     df_corte['OP'] = df_corte['OP'].astype(str).str.strip()
     df_corte['COR'] = df_corte['COR'].astype(str).str.strip().str.upper()
     df_corte['QUANTIDADE'] = pd.to_numeric(df_corte['QUANTIDADE'], errors='coerce').fillna(0).astype(int)
@@ -157,6 +151,17 @@ except Exception as e:
 # =====================================================================
 st.markdown('<div class="main-header">✂️ Dashboard Controle de Corte - Mantas</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Acompanhamento de produção e desempenho por estação</div>', unsafe_allow_html=True)
+
+# Mostrar range de datas disponíveis
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.info(f"📅 Dados de {df_corte['DATA'].min().strftime('%d/%m/%Y')} até {df_corte['DATA'].max().strftime('%d/%m/%Y')}")
+with col2:
+    if st.button("🔄 Limpar Cache e Recarregar", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+with col3:
+    st.metric("📊 Total de Registros", f"{len(df_corte):,}")
 
 # =====================================================================
 # SIDEBAR - FILTROS (com persistência via session_state)
@@ -261,10 +266,6 @@ if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
         (df_filtrado['DATA'].dt.date >= filtro_datas[0]) &
         (df_filtrado['DATA'].dt.date <= filtro_datas[1])
     ]
-
-if st.sidebar.button("🔄 Atualizar Dados"):
-    st.cache_data.clear()
-    st.rerun()
 
 st.sidebar.markdown("---")
 st.sidebar.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
