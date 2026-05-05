@@ -152,21 +152,19 @@ except Exception as e:
 st.markdown('<div class="main-header">✂️ Dashboard Controle de Corte - Mantas</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Acompanhamento de produção e desempenho por estação</div>', unsafe_allow_html=True)
 
-# Mostrar range de datas disponíveis
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.info(f"📅 Dados de {df_corte['DATA'].min().strftime('%d/%m/%Y')} até {df_corte['DATA'].max().strftime('%d/%m/%Y')}")
-with col2:
-    if st.button("🔄 Limpar Cache e Recarregar", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-with col3:
-    st.metric("📊 Total de Registros", f"{len(df_corte):,}")
-
 # =====================================================================
 # SIDEBAR - FILTROS (com persistência via session_state)
 # =====================================================================
 st.sidebar.header("🔍 Filtros")
+
+# Mostrar range de datas disponíveis no sidebar
+st.sidebar.info(f"📅 Dados de {df_corte['DATA'].min().strftime('%d/%m/%Y')} até {df_corte['DATA'].max().strftime('%d/%m/%Y')}")
+
+if st.sidebar.button("🔄 Limpar Cache e Recarregar", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+st.sidebar.metric("📊 Total de Registros", f"{len(df_corte):,}")
 
 df_trabalho = df_corte.copy()
 
