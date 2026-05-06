@@ -1,4 +1,0 @@
-[server]
-# Evita uso de inotify em ambientes Linux com limite baixo de watchers
-fileWatcherType = "none"
-runOnSave = false

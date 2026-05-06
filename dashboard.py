@@ -56,7 +56,7 @@ st.markdown("""
 
 # URL de exportação CSV do Google Sheets (fonte única de dados)
 GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
-GOOGLE_SHEETS_GID = "773147035"
+GOOGLE_SHEETS_GID = "528450968"
 GOOGLE_SHEETS_CSV_URLS = [
     (
         f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
