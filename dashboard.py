@@ -69,7 +69,7 @@ GOOGLE_SHEETS_CSV_URLS = [
 ]
 
 # Metas diárias de produção (peças/dia)
-METAS = {'MAQUINA': 8000, 'MESA 1': 4000, 'MESA 2': 3000}
+METAS = {'MAQUINA': 7000, 'MESA 1': 4000, 'MESA 2': 3000}
 META_TOTAL = sum(METAS.values())  # 15.000
 
 
