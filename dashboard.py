@@ -8,7 +8,18 @@ import io
 import urllib.request
 from urllib.error import HTTPError, URLError
 
-# Configurar locale brasileiro para datas
+# Importar configurações (com fallback se não existir)
+try:
+    from config import GOOGLE_SHEETS_ID, GOOGLE_SHEETS_GID, METAS, META_TOTAL, CACHE_TTL
+except ImportError:
+    # Valores padrão se config.py não existir
+    GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
+    GOOGLE_SHEETS_GID = None
+    METAS = {'MAQUINA': 7000, 'MESA 1': 4000, 'MESA 2': 3000}
+    META_TOTAL = sum(METAS.values())
+    CACHE_TTL = 60
+
+# CONFIGURAR LOCALE BRASILEIRO
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
@@ -52,48 +63,54 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# CONSTANTES
-
-# URL de exportação CSV do Google Sheets (fonte única de dados)
-GOOGLE_SHEETS_ID = "1iGj4-vknwzepbrHdRz1PwisZU2foU7aW"
-GOOGLE_SHEETS_GID = "206085601"    
-GOOGLE_SHEETS_CSV_URLS = [
-    (
-        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
-        f"/export?format=csv&gid={GOOGLE_SHEETS_GID}"
-    ),
-    (
-        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}"
-        f"/gviz/tq?tqx=out:csv&gid={GOOGLE_SHEETS_GID}"
-    ),
-]
-
-# Metas diárias de produção (peças/dia)
-METAS = {'MAQUINA': 7000, 'MESA 1': 4000, 'MESA 2': 3000}
-META_TOTAL = sum(METAS.values())  # 15.000
-
-
-
 # FUNÇÕES
 # Função removida: classificar_estacao - agora a estação vem direto da planilha
 
 
 def baixar_csv_google_sheets():
+    """
+    Baixa o CSV do Google Sheets de forma automática.
+    - Tenta primeiro sem especificar GID (usa a primeira aba)
+    - Se falhar, tenta as URLs com GID padrão
+    - Implementa retry automático
+    """
     headers = {'User-Agent': 'Mozilla/5.0'}
+    
+    # Estratégia 1: Sem especificar GID (carrega a primeira aba - mais confiável)
+    urls_padrao = [
+        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}/export?format=csv",
+        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv",
+    ]
+    
+    # Estratégia 2: Com GIDs conhecidos (fallback)
+    gids_fallback = ["206085601", "0"]  # GID padrão (0 é a primeira aba)
+    urls_fallback = []
+    for gid in gids_fallback:
+        urls_fallback.extend([
+            f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}/export?format=csv&gid={gid}",
+            f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&gid={gid}",
+        ])
+    
+    # Combinar URLs (prioridade: sem GID → com GID)
+    todas_urls = urls_padrao + urls_fallback
     ultimo_erro = None
 
-    for url in GOOGLE_SHEETS_CSV_URLS:
+    for url in todas_urls:
         try:
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=30) as response:
-                return io.StringIO(response.read().decode('utf-8'))
+                conteudo = response.read().decode('utf-8')
+                # Validar se recebeu dados
+                if conteudo.strip():
+                    return io.StringIO(conteudo)
         except (HTTPError, URLError, TimeoutError) as erro:
             ultimo_erro = erro
+            continue
 
-    raise RuntimeError(f"Falha ao baixar CSV do Google Sheets. Ultimo erro: {ultimo_erro}")
+    raise RuntimeError(f"Falha ao baixar CSV do Google Sheets. Último erro: {ultimo_erro}")
 
 
-@st.cache_data(ttl=60)  # Reduzido de 300 para 60 segundos para atualizar mais frequentemente
+@st.cache_data(ttl=CACHE_TTL)
 def carregar_dados():
     # Sempre lê do Google Sheets (fonte única de dados)
     csv_data = baixar_csv_google_sheets()

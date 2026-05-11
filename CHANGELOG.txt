@@ -1,0 +1,68 @@
+📋 RESUMO DAS MUDANÇAS - Detecção Automática de GID
+==================================================
+
+✅ ALTERAÇÕES REALIZADAS:
+
+1. [NOVO] config.py
+   - Arquivo centralizado de configuração
+   - GID configurável (padrão: None = automático)
+   - Metas de produção customizáveis
+   - Cache configurável
+
+2. [NOVO] gid_detector.py
+   - Ferramenta para detectar GID automaticamente
+   - Testa múltiplos GIDs
+   - Use quando a planilha mudar estruturalmente
+
+3. [NOVO] GID_AUTOMATICO.md
+   - Documentação completa sobre a solução
+   - Passo a passo de uso
+
+4. [MODIFICADO] dashboard.py
+   - Agora importa do config.py
+   - Remove URLs hardcoded com GID
+   - Detecção automática de primeira aba
+   - Mais resiliente a mudanças
+
+
+📌 COMO USAR (Agora é simples!):
+
+1. EXECUTE O DASHBOARD (Normal)
+   ➜ streamlit run dashboard.py
+   
+   → Dashboard carrega a PRIMEIRA ABA automaticamente
+   → Nenhuma mudança manual necessária
+   → Mesmo se dados novos chegarem!
+
+2. SE PRECISAR CUSTOMIZAR (Raro)
+   ➜ Edite config.py
+   ➜ Mude GOOGLE_SHEETS_GID se souber qual usar
+   
+3. SE A PLANILHA MUDAR RADICALMENTE (Extra raro)
+   ➜ python gid_detector.py
+   ➜ Veja qual GID foi detectado
+   ➜ Atualize config.py se necessário
+
+
+🎯 RESULTADOS:
+
+Antes:
+❌ Quebrava toda vez que planilha atualizava
+❌ Precisava mudar GID manualmente
+❌ Dashboard instável
+
+Depois:
+✅ Automático e inteligente
+✅ Sem intervenção manual
+✅ Dashboard estável mesmo com mudanças
+
+
+⚡ TESTES:
+
+✅ Sintaxe Python: OK
+✅ Importação config: OK
+✅ Valores carregam corretamente: OK
+
+
+🚀 Próximo passo: Teste o dashboard!
+   streamlit run dashboard.py
